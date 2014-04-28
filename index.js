@@ -9,6 +9,8 @@ var sendMessage = require('./lib/sendMessage');
 var reqAcsToken = require('./lib/accessToken');
 var toJson = require('xml2js').parseString;
 var media = require('./lib/mediaFile');
+var QR = require('./lib/QRcode');
+var user = require('./lib/followers');
 var path = require('path');
 var os = require('os');
 
@@ -28,7 +30,7 @@ weChat.set = function(setting, val){
 };
 
 /**
- * weChat中间件 验证并解析xml消息 结果包含在 req.wechat 里
+ * weChat解析中间件 验证并解析xml消息 结果包含在 req.wechat 里
  * @returns {Function}
  */
 weChat.parser = function (){
@@ -77,7 +79,8 @@ weChat.parser = function (){
 weChat.on = function (type,callback) {
   return function (req,res,next){
     var w=req.wechat,t=w.EventKey || w.Event || w.MsgType;
-    return type==t?callback(req,res,next):next();
+    if('*'==type) return callback(req,res,next);
+    else return type==t?callback(req,res,next):next();
   }
 };
 
@@ -98,7 +101,7 @@ weChat.setAccessTokenOnTime = function (timer) {
     weChat.set('access_token', access_token)
   }
   this.requestAccessToken(set_access_token);
-  setInterval(function(){weChat.requestAccessToken(set_access_token)},timer||7150000);
+  setInterval(function(){weChat.requestAccessToken(set_access_token)},timer||7000000);
 };
 
 /**
@@ -120,9 +123,9 @@ weChat.upload = function (file_path,media_type,callback) {
   // TODO: 支持URL远程文件 (CouchDB是通过URL直接获取文件的)
   // TODO: 检测路径兼容性 (比如Win下相对路径会不会出问题)
   var tool='Windows_NT'==os.type()?'node':'curl',cb=typeof media_type=='function'?media_type:callback,
-      typeObj={'.jpeg':'image','.jpg':'image','.amr':'audio','.mp4':'video','.mp3':'audio'},
+      typeObj={'.jpeg':'image','.jpg':'image','.amr':'voice','.mp4':'video','.mp3':'voice'},
       type=typeof media_type=='string'?media_type:typeObj[path.extname(file_path).toLowerCase()],
-      url='http://file.api.weixin.qq.com/cgi-bin/media/upload?access_token='+this.set('access_token')+'&type='+type;
+      url='http://file.api.weixin.qq.com/cgi-bin/media/upload?access_token='+this.set('access_token')+'&type='+type||'image';
   return media.upload(file_path,url,tool,cb)
 };
 
@@ -137,6 +140,27 @@ weChat.download = function (media_id,dir_path,callback) {
   return media.download(url,dir_path,callback)
 };
 
+/**
+ * 请求二维码
+ * 有expire时为临时二维码 没有expire时为永久二维码
+ * @param {Number|String} scene_id 32位无符号整形数字(0~4294967295)(字符将会被转成数字)
+ * @param {Function|Number|String} [expire]
+ * @param {Function} callback
+ */
+weChat.QRCode = function (scene_id,expire,callback) {
+  var token=this.set('access_token');
+  return typeof expire=='function'?QR.limit(token,scene_id,expire):QR.temp(token,expire,scene_id,callback);
+};
+
+weChat.userInfo = function (openid,callback) {
+  return user.info(this.set('access_token'),openid,callback);
+};
+
+weChat.userList = function (openid,callback) {
+  return user.list(this.set('access_token'),openid,callback);
+};
+
+// TODO: 获取关注者列表 获取用户信息
 // TODO: 利用 Canvas 压缩上传的图片
 // TODO: 高级群发
 // TODO: 自定义菜单
