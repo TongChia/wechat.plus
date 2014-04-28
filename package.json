@@ -1,0 +1,29 @@
+{
+  "name": "wechat.plus",
+  "version": "0.0.1",
+  "description": "wechat modules for node (express 4.0)",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "xml2js": "~0.4.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TongChia/wechat.plus.git"
+  },
+  "keywords": [
+    "wechat",
+    "微信"
+  ],
+  "author": "TongChia",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/TongChia/wechat.plus/issues"
+  }
+}
